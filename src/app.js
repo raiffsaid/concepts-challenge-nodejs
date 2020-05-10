@@ -5,6 +5,16 @@ const { uuid, isUuid } = require("uuidv4");
 
 const app = express();
 
+function validateProjectId(request, response, next) {
+  const { id } = request.params;
+
+  if (!isUuid(id)) {
+    return response.status(400).json({ error: 'Invalid Project ID' });
+  }
+
+  return next();
+}
+
 app.use(express.json());
 app.use(cors());
 
@@ -30,7 +40,7 @@ app.post("/repositories", (request, response) => {
   return response.json(repository);
 });
 
-app.put("/repositories/:id", (request, response) => {
+app.put("/repositories/:id", validateProjectId, (request, response) => {
   const { title, url, techs } = request.body;
   const { id } = request.params;
 
@@ -41,10 +51,6 @@ app.put("/repositories/:id", (request, response) => {
    */
   const repositoryIndex = 
     repositories.findIndex(repository => repository.id === id);
-
-  if (!isUuid(id)) {
-    return response.status(400).json({ error: "Invalid project ID" });
-  }
 
   if (repositoryIndex < 0) {
     return response
@@ -65,17 +71,11 @@ app.put("/repositories/:id", (request, response) => {
   return response.json(repository);
 });
 
-app.delete("/repositories/:id", (request, response) => {
+app.delete("/repositories/:id", validateProjectId, (request, response) => {
   const { id } = request.params;
 
   const repositoryIndex = 
     repositories.findIndex(repository => repository.id === id);
-
-  if (!isUuid(id)) {
-    return response
-      .status(400)
-      .json({ error: "Invalid project ID" });
-  }
 
   /**
    * Caso ache repositórios através do índice,
@@ -92,7 +92,7 @@ app.delete("/repositories/:id", (request, response) => {
   return response.status(204).send();
 });
 
-app.post("/repositories/:id/like", (request, response) => {
+app.post("/repositories/:id/like", validateProjectId, (request, response) => {
   const { id } = request.params;
 
   const repositoryIndex = 
