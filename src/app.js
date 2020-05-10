@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 
-const { uuid } = require("uuidv4");
+const { uuid, isUuid } = require("uuidv4");
 
 const app = express();
 
@@ -34,18 +34,30 @@ app.put("/repositories/:id", (request, response) => {
   const { title, url, techs } = request.body;
   const { id } = request.params;
 
+  /**
+   * Percorre cada elemento do array 
+   * para satifazer a condição repository.id === id
+   * Quando a condição retornar true, retorna o índice do elemento
+   */
   const repositoryIndex = 
     repositories.findIndex(repository => repository.id === id);
 
-  if (repository < 0) {
-    return response.status(400).json({ 
-      error: 'Repository ID does not exists'});
+  if (!isUuid(id)) {
+    return response.status(400).json({ error: "Invalid project ID" });
+  }
+
+  if (repositoryIndex < 0) {
+    return response
+      .status(400)
+      .json({ error: 'Repository ID does not exists'});
   }
 
   const repository = {
+    id,
     title,
     url,
-    techs
+    techs,
+    likes: repositories[repositoryIndex].likes // Número de likes salvos
   }
 
   repositories[repositoryIndex] = repository;
@@ -54,21 +66,47 @@ app.put("/repositories/:id", (request, response) => {
 });
 
 app.delete("/repositories/:id", (request, response) => {
-  // TODO
+  const { id } = request.params;
+
+  const repositoryIndex = 
+    repositories.findIndex(repository => repository.id === id);
+
+  if (!isUuid(id)) {
+    return response
+      .status(400)
+      .json({ error: "Invalid project ID" });
+  }
+
+  /**
+   * Caso ache repositórios através do índice,
+   * remove utilizando a função splice()
+   */
+  if (repositoryIndex >= 0) {
+    repositories.splice(repositoryIndex, 1);
+  } else {
+    return response
+      .status(400)
+      .json({ error: "Repository ID does not exists" })
+  }
+
+  return response.status(204).send();
 });
 
 app.post("/repositories/:id/like", (request, response) => {
   const { id } = request.params;
 
-  const repository = repositories.find(repository => repository.id === id);
+  const repositoryIndex = 
+    repositories.findIndex(repository => repository.id === id);
 
-  if (!repository) {
-    return response.status(400).send();
+  if (repositoryIndex < 0) {
+    return response
+      .status(400)
+      .json({ error: 'Repository ID does not exists'});
   }
 
-  repository.likes ++;
+  repositories[repositoryIndex].likes ++; // Adiciona likes pelo índice
 
-  return response.json(repository);
+  return response.json(repositories[repositoryIndex]);
 });
 
 module.exports = app;
